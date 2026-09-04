@@ -1,9 +1,7 @@
 package com.kvales.auth.adapter.out.security;
 
-
-
-
-
+import com.kvales.auth.application.port.out.TokenGenerator;
+import com.kvales.auth.application.port.out.UserProvider;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -14,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Service
-public class JwtService {
+public class JwtService implements TokenGenerator {
 
     private final SecretKey secretKey;
     private final long expiration;
@@ -23,7 +21,6 @@ public class JwtService {
             @Value("${jwt.secret}") String secret,
             @Value("${jwt.expiration}") long expiration
     ) {
-
         this.secretKey = Keys.hmacShaKeyFor(
                 secret.getBytes(StandardCharsets.UTF_8)
         );
@@ -31,10 +28,8 @@ public class JwtService {
         this.expiration = expiration;
     }
 
-    public String generateToken(
-            Long userId,
-            String email
-    ) {
+    @Override
+    public String generate(UserProvider.UserData user) {
 
         Date now = new Date();
 
@@ -42,8 +37,8 @@ public class JwtService {
                 new Date(now.getTime() + expiration);
 
         return Jwts.builder()
-                .subject(email)
-                .claim("userId", userId)
+                .subject(user.email())
+                .claim("userId", user.id())
                 .issuedAt(now)
                 .expiration(expirationDate)
                 .signWith(secretKey)
@@ -63,7 +58,6 @@ public class JwtService {
     public boolean isValid(String token) {
 
         try {
-
             Jwts.parser()
                     .verifyWith(secretKey)
                     .build()
@@ -72,7 +66,6 @@ public class JwtService {
             return true;
 
         } catch (Exception e) {
-
             return false;
         }
     }
