@@ -41,4 +41,18 @@ public class UserController {
             String password
     ) {
     }
+
+
+    @GetMapping
+    public ResponseEntity<GetUserByEmailUseCase.UserResult>
+    getByEmail(
+            @RequestParam String email
+    ) {
+        var result =
+                registerUserUseCase.getUserByEmail(email);
+
+        return ResponseEntity.ok(result);
+    }
+
+
 }
