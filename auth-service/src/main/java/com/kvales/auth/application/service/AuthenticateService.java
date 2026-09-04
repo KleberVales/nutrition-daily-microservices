@@ -1,28 +1,24 @@
 package com.kvales.auth.application.service;
 
-import com.kvales.auth.adapter.out.security.JwtService;
 import com.kvales.auth.application.port.in.AuthenticateUseCase;
-import com.kvales.auth.application.port.out.UserRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Transactional
-public class AuthenticateService implements AuthenticateUseCase {
+public class AuthenticateService
+        implements AuthenticateUseCase {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
+    private final UserProvider userProvider;
+    private final PasswordHasher passwordHasher;
+    private final TokenGenerator tokenGenerator;
 
     public AuthenticateService(
-            UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
-            JwtService jwtService
+            UserProvider userProvider,
+            PasswordHasher passwordHasher,
+            TokenGenerator tokenGenerator
     ) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
+        this.userProvider = userProvider;
+        this.passwordHasher = passwordHasher;
+        this.tokenGenerator = tokenGenerator;
     }
 
     @Override
@@ -30,27 +26,17 @@ public class AuthenticateService implements AuthenticateUseCase {
             AuthenticateCommand command
     ) {
 
-        var user = userRepository
-                .findByEmail(command.email())
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Invalid email or password"
-                        )
-                );
+        var user =
+                userProvider.findByEmail(command.email());
 
-        if (!passwordEncoder.matches(
+        if (!passwordHasher.matches(
                 command.password(),
-                user.getPassword()
+                user.passwordHash()
         )) {
-            throw new IllegalArgumentException(
-                    "Invalid email or password"
-            );
+            throw new RuntimeException("Invalid credentials");
         }
 
-        String token = jwtService.generateToken(
-                user.getId(),
-                user.getEmail()
-        );
+        var token = tokenGenerator.generate(user);
 
         return new AuthenticateResult(token);
     }
