@@ -44,7 +44,7 @@ public class UserController {
 
 
     @GetMapping
-    public ResponseEntity<GetUserByEmailUseCase.UserResult>
+    public ResponseEntity<RegisterUserUseCase.UserResult>
     getByEmail(
             @RequestParam String email
     ) {
